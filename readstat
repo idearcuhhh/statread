@@ -1,0 +1,171 @@
+--Stat reader (not by me im just doing this to make a loadstring xd)
+
+function format_number(number)
+    local suffixes = {"", "K", "M", "B", "T", "QD"}
+    local suffix_index = 1
+
+    while math.abs(number) >= 1000 and suffix_index < #suffixes do
+        number = number / 1000.0
+        suffix_index = suffix_index + 1
+    end
+
+    return string.format("%.2f%s", number, suffixes[suffix_index])
+end
+
+local player = game:GetService("Players").LocalPlayer
+
+-- Create a ScreenGui in the LocalPlayer's PlayerGui
+local gui = Instance.new("ScreenGui")
+gui.Name = "LeaderboardGUI"
+gui.Parent = game.CoreGui
+
+-- Create a ScrollingFrame to hold the leaderboard
+local scrollFrame = Instance.new("ScrollingFrame")
+scrollFrame.Name = "LeaderboardFrame"
+scrollFrame.Size = UDim2.new(0, 400, 0, 300)
+scrollFrame.Position = UDim2.new(0.5, -200, 0.5, -150) -- Centered position
+scrollFrame.BackgroundColor3 = Color3.new(0, 0, 0)
+scrollFrame.BackgroundTransparency = 0.5
+scrollFrame.Visible = false -- Start with the leaderboard closed
+scrollFrame.ScrollBarThickness = 12 -- Add scrollbar thickness
+scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0) -- Start with empty canvas
+scrollFrame.Parent = gui
+
+-- Create a UIListLayout to arrange leaderboard entries vertically
+local listLayout = Instance.new("UIListLayout")
+listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+listLayout.Parent = scrollFrame
+
+-- Create a TextLabel to display leaderboard text
+local leaderboardText = Instance.new("TextLabel")
+leaderboardText.Name = "LeaderboardText"
+leaderboardText.Size = UDim2.new(0, 200, 0, 30)
+leaderboardText.Position = UDim2.new(0.5, -100, 0, -5)
+leaderboardText.Text = "Leaderboard"
+leaderboardText.TextColor3 = Color3.new(1, 1, 1)
+leaderboardText.BackgroundTransparency = 1
+leaderboardText.Parent = scrollFrame
+
+-- Function to update the leaderboard
+local function updateLeaderboard()
+    -- Clear previous entries
+    for _, child in ipairs(scrollFrame:GetChildren()) do
+        if child ~= leaderboardText then
+            child:Destroy()
+        end
+    end
+
+    -- Get joined players
+    local players = game:GetService("Players"):GetPlayers()
+
+    -- Create new entries
+    local yOffset = 0
+    for i, player in ipairs(players) do
+        local entryFrame = Instance.new("Frame")
+        entryFrame.Name = "EntryFrame"
+        entryFrame.Size = UDim2.new(1, 0, 0, 30)
+        entryFrame.Position = UDim2.new(0, 10, 0, 10 + (i - 1) * 35)
+        entryFrame.BackgroundColor3 = Color3.new(0, 0, 0)
+        entryFrame.BackgroundTransparency = 0.5
+        entryFrame.Parent = scrollFrame
+
+        local nameLabel = Instance.new("TextLabel")
+        nameLabel.Name = "NameLabel"
+        nameLabel.Size = UDim2.new(0.5, -80, 1, 0)
+        nameLabel.Position = UDim2.new(0, 10, 0, 0 + (i - 1) * 0)
+        nameLabel.Text = player.Name
+        nameLabel.TextColor3 = Color3.new(1, 1, 1)
+        nameLabel.BackgroundTransparency = 1
+        nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+        nameLabel.Parent = entryFrame
+
+        -- Fetch stat data
+        local playerStats = game:GetService("ReplicatedStorage"):FindFirstChild("Datas"):FindFirstChild(tostring(player.UserId))
+        if playerStats then
+            -- Fetch rebirth data
+            local playerRebirths = playerStats:FindFirstChild("Rebirth")
+
+            local strengthStat = playerStats:FindFirstChild("Strength")
+            local defenceStat = playerStats:FindFirstChild("Defense")
+            local energyStat = playerStats:FindFirstChild("Energy")
+            local speedStat = playerStats:FindFirstChild("Speed")
+
+            if strengthStat and defenceStat and energyStat and speedStat then
+                local averageLabel = Instance.new("TextLabel")
+                averageLabel.Name = "AverageLabel"
+                averageLabel.Size = UDim2.new(0.25, 0, 1, 0)
+                averageLabel.Position = UDim2.new(0.5, -70, 0, 0 + (i - 1) * 0)
+                local averageValue = (strengthStat.Value + defenceStat.Value + energyStat.Value + speedStat.Value) / 4
+                averageLabel.Text = "Avg: " .. format_number(averageValue)
+                averageLabel.TextColor3 = Color3.new(1, 1, 1)
+                averageLabel.BackgroundTransparency = 1
+                averageLabel.TextXAlignment = Enum.TextXAlignment.Left
+                averageLabel.Parent = entryFrame
+            end
+
+            if playerRebirths then
+                local rebirthLabel = Instance.new("TextLabel")
+                rebirthLabel.Name = "RebirthLabel"
+                rebirthLabel.Size = UDim2.new(0.25, 0, 1, 0)
+                rebirthLabel.Position = UDim2.new(1, -150, 0, 0 + (i - 1) * 0)
+                rebirthLabel.Text = "Rebirths: " .. tostring(playerRebirths.Value)
+                rebirthLabel.TextColor3 = Color3.new(1, 1, 1)
+                rebirthLabel.BackgroundTransparency = 1
+                rebirthLabel.TextXAlignment = Enum.TextXAlignment.Right
+                rebirthLabel.Parent = entryFrame
+            end
+        end
+
+        yOffset = yOffset + 40
+    end
+
+    -- Update the canvas size to fit the new entries
+    scrollFrame.CanvasSize = UDim2.new(0, 0, 0, yOffset)
+end
+
+
+
+
+
+
+-- Bind the toggleLeaderboard function to the button click event
+local function toggleLeaderboard()
+    scrollFrame.Visible = not scrollFrame.Visible
+end
+
+-- Bind the toggleLeaderboard function to the button click event
+
+
+-- Update the leaderboard initially
+updateLeaderboard()
+
+-- Schedule leaderboard updates every 2 seconds
+while true do
+    wait(2)
+    if scrollFrame.Visible then
+        updateLeaderboard()
+    end
+    local button = gui:FindFirstChild("ToggleButton")
+    if button then
+        -- Button exists
+        -- Perform your desired actions here
+    else
+        local buttonFrame = Instance.new("Frame")
+        buttonFrame.Name = "ButtonFrame"
+        buttonFrame.Size = UDim2.new(0, 100, 0, 30)
+        buttonFrame.Position = UDim2.new(0.5, -50, 1, -40) -- Bottom centered position
+        buttonFrame.BackgroundTransparency = 1
+        buttonFrame.Parent = gui
+        
+        -- Create a Button to open/close the leaderboard
+        local toggleButton = Instance.new("TextButton")
+        toggleButton.Name = "ToggleButton"
+        toggleButton.Size = UDim2.new(1, 0, 1, 0)
+        toggleButton.Text = "Toggle"
+        toggleButton.Parent = buttonFrame
+        
+        toggleButton.MouseButton1Click:Connect(toggleLeaderboard)
+          
+    end
+    
+end
